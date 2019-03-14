@@ -14,9 +14,9 @@
       <nav class="navbar navbar-dark bg-dark">
         <a class="navbar-brand" href="#">Спортивные новости</a>
 
-        <!--{% if "username" in session %}-->
-          <!--<a class="navbar-brand" href="/logout">{{session['username']}}</a>-->
-        <!--{% endif %}-->
+        {% if "username" in session %}
+          <a class="navbar-brand" href="/logout">{{session['username']}}</a>
+        {% endif %}
       </nav>
     </header>
 
