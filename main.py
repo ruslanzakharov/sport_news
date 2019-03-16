@@ -1,10 +1,13 @@
 from flask import Flask, render_template, redirect, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, PasswordField
+from wtforms import StringField, SubmitField, PasswordField, SelectField,\
+    FileField, TextAreaField
 from wtforms.validators import DataRequired, Length, ValidationError
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import configs
+from datetime import datetime
+import os
 
 
 app = Flask(__name__)
@@ -55,6 +58,13 @@ def validate_username(form, username):
         raise ValidationError('Пользователь существует')
 
 
+def validate_login():
+    """Проверяет, вошел ли пользователь в аккаунт"""
+    if 'username' not in session:
+        print('Войдите в аккаунт')
+        raise ValidationError('Войдите в аккаунт')
+
+
 class LoginForm(FlaskForm):
     username = StringField('Имя пользователя', validators=[DataRequired()])
     password = PasswordField('Пароль', validators=[
@@ -67,6 +77,40 @@ class RegistrationForm(FlaskForm):
         Length(min=4, max=25), validate_username])
     password = PasswordField('Пароль', [Length(min=6, max=35)])
     submit = SubmitField('Зарегистрироваться')
+
+
+class AddNewsForm(FlaskForm):
+    category = SelectField('Категория', choices=[
+        ('Футбол', 'Футбол'), ('Формула 1', 'Формула 1')])
+    photo = FileField('Фотография', validators=[DataRequired])
+    title = StringField('Заголовок', validators=[DataRequired])
+    content = TextAreaField('Текст', validators=[DataRequired])
+    submit = SubmitField('Добавить', validators=[validate_login])
+
+
+@app.route('/add_news', methods=['GET', 'POST'])
+def add_news():
+    form = AddNewsForm()
+
+    if form.validate_on_submit():
+        news = News()
+        news.title = form.title.data
+        news.category = form.category.data
+        news.content = form.content.data
+        news.user_id = session['user_id']
+
+        im = form.photo.data
+        news.photo = os.path.join('static/img', im.filename)
+        im.save(news.photo)
+
+        news.date = str(datetime.now()).split('.')[0]
+
+        db.session.add(news)
+        db.session.commit()
+
+        return redirect('/success')
+    return render_template(
+        'add_news.html', title='Добавить новость', form=form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -86,8 +130,8 @@ def register():
     return render_template('register.html', title='Регистрация', form=form)
 
 
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 def index():
     return render_template('index.html', title='Главная')
 
@@ -117,5 +161,18 @@ def logout():
     return redirect('/login')
 
 
+@app.route('/test')
+def test():
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        session['username'] = form.username.data
+        session['user_id'] = User.query.filter_by(
+            username=session['username']).first().id
+
+        return redirect('/success')
+    return render_template('login.html', title='Авторизация', form=form)
+
+
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8082)
+    app.run(host='127.0.0.1', port=8083)
