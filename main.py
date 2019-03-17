@@ -58,7 +58,7 @@ def validate_username(form, username):
         raise ValidationError('Пользователь существует')
 
 
-def validate_login():
+def validate_login(form, username):
     """Проверяет, вошел ли пользователь в аккаунт"""
     if 'username' not in session:
         print('Войдите в аккаунт')
@@ -82,9 +82,9 @@ class RegistrationForm(FlaskForm):
 class AddNewsForm(FlaskForm):
     category = SelectField('Категория', choices=[
         ('Футбол', 'Футбол'), ('Формула 1', 'Формула 1')])
-    photo = FileField('Фотография', validators=[DataRequired])
-    title = StringField('Заголовок', validators=[DataRequired])
-    content = TextAreaField('Текст', validators=[DataRequired])
+    photo = FileField('Фотография', validators=[DataRequired()])
+    title = StringField('Заголовок', validators=[DataRequired()])
+    content = TextAreaField('Текст', validators=[DataRequired()])
     submit = SubmitField('Добавить', validators=[validate_login])
 
 
@@ -93,18 +93,21 @@ def add_news():
     form = AddNewsForm()
 
     if form.validate_on_submit():
-        news = News()
-        news.title = form.title.data
-        news.category = form.category.data
-        news.content = form.content.data
-        news.user_id = session['user_id']
-
         im = form.photo.data
-        news.photo = os.path.join('static/img', im.filename)
-        im.save(news.photo)
+        photo_path = os.path.join('static/img', im.filename)
+        im.save(photo_path)
 
-        news.date = str(datetime.now()).split('.')[0]
+        date = str(datetime.now()).split('.')[0]
+        print(date)
 
+        news = News(
+            title=form.title.data,
+            category=form.category.data,
+            content=form.content.data,
+            user_id=session['user_id'],
+            photo=photo_path,
+            date=date,
+        )
         db.session.add(news)
         db.session.commit()
 
@@ -133,7 +136,9 @@ def register():
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
 def index():
-    return render_template('index.html', title='Главная')
+    news = News.query.all()
+    print(news)
+    return render_template('index.html', title='Главная', news=news)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -161,18 +166,5 @@ def logout():
     return redirect('/login')
 
 
-@app.route('/test')
-def test():
-    form = LoginForm()
-
-    if form.validate_on_submit():
-        session['username'] = form.username.data
-        session['user_id'] = User.query.filter_by(
-            username=session['username']).first().id
-
-        return redirect('/success')
-    return render_template('login.html', title='Авторизация', form=form)
-
-
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8083)
+    app.run(debug=True)

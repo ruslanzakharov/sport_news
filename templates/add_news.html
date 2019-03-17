@@ -41,12 +41,12 @@
     {% endfor %}
   </p>
   <p>
+    {{ form.submit() }}
     {% for error in form.submit.errors %}
       <div class="alert alert-danger" role="alert">
         {{ error }}
       </div>
-    {% endfor %}
-    {{ form.submit() }}
+  {% endfor %}
   </p>
 </form>
 {% endblock %}

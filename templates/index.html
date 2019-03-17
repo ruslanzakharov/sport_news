@@ -1,5 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
-
+{% for item in news %}
+  <div class="card text-white bg-dark mb-3" style="width: 18rem;">
+    <img src="{{ item.photo }}" class="card-img-top" alt="Изображение">
+    <div class="card-body">
+      <h5 class="card-title">{{ item.title }}</h5>
+      <a href="/news/{{ item.id }}" class="btn btn-primary">Прочитать</a>
+    </div>
+    <div class="card-footer text-muted">
+      {{ item.date }}
+    </div>
+  </div>
+{% endfor %}
 {% endblock %}
