@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, session
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, SelectField,\
-    FileField, TextAreaField
+    FileField, TextAreaField, BooleanField
 from wtforms.validators import DataRequired, Length, ValidationError
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -40,7 +40,7 @@ class News(db.Model):
     user = db.relationship('User', backref=db.backref('news', lazy=True))
 
     def __repr__(self):
-        return 'News {} {}'.format(self.id, self.title)
+        return '<News {} {}>'.format(self.id, self.title)
 
 
 def validate_password(form, password):
@@ -58,7 +58,7 @@ def validate_username(form, username):
         raise ValidationError('Пользователь существует')
 
 
-def validate_login(form, username):
+def validate_login(form, submit):
     """Проверяет, вошел ли пользователь в аккаунт"""
     if 'username' not in session:
         print('Войдите в аккаунт')
@@ -88,9 +88,19 @@ class AddNewsForm(FlaskForm):
     submit = SubmitField('Добавить', validators=[validate_login])
 
 
+class EditNewsForm(FlaskForm):
+    category = SelectField('Категория', choices=[
+        ('Футбол', 'Футбол'), ('Формула 1', 'Формула 1')])
+    photo = FileField('Фотография')
+    title = StringField('Заголовок')
+    content = TextAreaField('Текст')
+    submit = SubmitField('Изменить', validators=[validate_login])
+
+
 @app.route('/add_news', methods=['GET', 'POST'])
 def add_news():
     form = AddNewsForm()
+    help(form)
 
     if form.validate_on_submit():
         im = form.photo.data
@@ -116,6 +126,59 @@ def add_news():
         'add_news.html', title='Добавить новость', form=form)
 
 
+@app.route('/news/<int:news_id>', methods=['GET', 'POST'])
+def news(news_id):
+    news = News.query.get(news_id)
+    # В news.photo неправильно указан адрес при работе в news.html
+    news.photo = os.path.abspath(news.photo)
+    print(news.photo)
+
+    author = User.query.get(news.user_id).username
+
+    return render_template(
+        'news.html', title='Новость', news=news, author=author)
+
+
+@app.route('/edit_news/<int:news_id>', methods=['GET', 'POST'])
+def edit_news(news_id):
+    form = EditNewsForm()
+
+    if form.validate_on_submit():
+        news = News.query.get(news_id)
+
+        im = form.photo.data
+        if im:
+            photo_path = os.path.join('static/img', im.filename)
+            im.save(photo_path)
+
+            news.photo = photo_path
+
+        title = form.title.data
+        if title:
+            news.title = title
+
+        news.category = form.category.data
+
+        content = form.content.data
+        if content:
+            news.content = content
+
+        db.session.commit()
+        return redirect('/success')
+    return render_template(
+        'edit_news.html', title='Изменить новость', form=form,
+        news_id=news_id)
+
+
+@app.route('/delete_news/<int:news_id>', methods=['GET', 'DELETE'])
+def delete_news(news_id):
+    news = News.query.get(news_id)
+    db.session.delete(news)
+    db.session.commit()
+
+    return redirect('/success')
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm()
@@ -137,7 +200,6 @@ def register():
 @app.route('/index', methods=['GET', 'POST'])
 def index():
     news = News.query.all()
-    print(news)
     return render_template('index.html', title='Главная', news=news)
 
 
