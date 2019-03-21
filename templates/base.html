@@ -16,7 +16,7 @@
 
         <a class="navbar-brand" href="/">Главная</a>
         <a class="navbar-brand" href="/football">Футбол</a>
-        <a class="navbar-brand" href="/football">Формула 1</a>
+        <a class="navbar-brand" href="/formula">Формула 1</a>
 
 
         {% if not "username" in session %}
@@ -24,7 +24,7 @@
         {% endif %}
 
         {% if "username" in session %}
-          <a class="navbar-brand" href="/logout">{{session['username']}}</a>
+          <a class="navbar-brand" href="/user/{{ session['user_id'] }}">{{session['username']}}</a>
         {% endif %}
       </nav>
     </header>

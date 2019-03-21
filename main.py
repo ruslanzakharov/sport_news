@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, session
+from flask import Flask, render_template, redirect, session, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, SelectField,\
     FileField, TextAreaField, BooleanField
@@ -104,7 +104,7 @@ def add_news():
 
     if form.validate_on_submit():
         im = form.photo.data
-        photo_path = os.path.join('static/img', im.filename)
+        photo_path = os.path.join('img', im.filename)
         im.save(photo_path)
 
         date = str(datetime.now()).split('.')[0]
@@ -130,8 +130,7 @@ def add_news():
 def news(news_id):
     news = News.query.get(news_id)
     # В news.photo неправильно указан адрес при работе в news.html
-    news.photo = os.path.abspath(news.photo)
-    print(news.photo)
+    news.photo = url_for('static', filename=news.photo)
 
     author = User.query.get(news.user_id).username
 
@@ -151,7 +150,8 @@ def edit_news(news_id):
             photo_path = os.path.join('static/img', im.filename)
             im.save(photo_path)
 
-            news.photo = photo_path
+            news.photo = os.path.join('img', im.filename)
+            print(news.photo, 'news.photo, edit_news()')
 
         title = form.title.data
         if title:
@@ -199,8 +199,41 @@ def register():
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
 def index():
-    news = News.query.all()
-    return render_template('index.html', title='Главная', news=news)
+    news_list = News.query.all()
+
+    # Указываем правильный путь к изображению
+    for news in news_list:
+        news.photo = url_for('static', filename=news.photo)
+
+    news_list.sort(key=lambda x: x.id, reverse=True)
+
+    return render_template('index.html', title='Главная', news=news_list)
+
+
+@app.route('/football', methods=['GET', 'POST'])
+def footbal():
+    news_list = News.query.filter_by(category='Футбол').all()
+
+    # Указываем правильный путь к изображению
+    for news in news_list:
+        news.photo = url_for('static', filename=news.photo)
+
+    news_list.sort(key=lambda x: x.id, reverse=True)
+
+    return render_template('index.html', title='Футбол', news=news_list)
+
+
+@app.route('/formula', methods=['GET', 'POST'])
+def formula():
+    news_list = News.query.filter_by(category='Формула 1').all()
+
+    # Указываем правильный путь к изображению
+    for news in news_list:
+        news.photo = url_for('static', filename=news.photo)
+
+    news_list.sort(key=lambda x: x.id, reverse=True)
+
+    return render_template('index.html', title='Формула 1', news=news_list)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -226,6 +259,14 @@ def logout():
     session.pop('username', 0)
     session.pop('user_id', 0)
     return redirect('/login')
+
+
+@app.route('/user/<int:user_id>')
+def user(user_id):
+    news_list = News.query.filter_by(user_id=session['user_id'])
+
+    return render_template(
+        'user.html', title=session['username'], news_list=news_list)
 
 
 if __name__ == '__main__':

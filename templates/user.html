@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{ title }}</h1>
+
+<a href="/news/add_news">Добавить новость</a>
+<a href="/news/logout">Выйти</a>
+
+<table class="table">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Название</th>
+      <th scope="col">Дата</th>
+      <th scope="col">Изменить</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for news in news_list %}
+      <tr>
+        <th scope="row">{{ news.id }}</th>
+        <td><a href="/news/{{ news.id }}">{{ news.title }}</a></td>
+        <td>{{ news.date }}</td>
+        <td><a href="/edit_news/{{ news.id }}">Изменить</a></td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
