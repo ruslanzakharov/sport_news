@@ -104,7 +104,7 @@ def add_news():
 
     if form.validate_on_submit():
         im = form.photo.data
-        photo_path = os.path.join('img', im.filename)
+        photo_path = os.path.join('static/img', im.filename)
         im.save(photo_path)
 
         date = str(datetime.now()).split('.')[0]
