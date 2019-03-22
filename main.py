@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, session, url_for
+from flask import Flask, render_template, redirect, session, url_for, jsonify
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, SelectField,\
     FileField, TextAreaField, BooleanField
@@ -8,9 +8,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from config import configs
 from datetime import datetime
 import os
+from flask_restful import reqparse, abort, Api, Resource
 
 
 app = Flask(__name__)
+api = Api(app, catch_all_404s=True)
+
 for key in configs.keys():
     app.config[key] = configs[key]
 
@@ -41,6 +44,85 @@ class News(db.Model):
 
     def __repr__(self):
         return '<News {} {}>'.format(self.id, self.title)
+
+
+def abort_if_news_not_found(news_id):
+    if not News.query.get(news_id):
+        abort(404, message="News {} not found".format(news_id))
+
+
+def abort_if_user_not_found(user_id):
+    if not News.query.get(user_id):
+        abort(404, message="User {} not found".format(user_id))
+
+
+class NewsApi(Resource):
+    def get(self, news_id):
+        abort_if_news_not_found(news_id)
+
+        news = News.query.get(news_id)
+        res = {
+            'title': news.title,
+            'date': news.date,
+            'user_id': news.user_id
+        }
+
+        return jsonify({'news': res})
+
+    def delete(self, news_id):
+        abort_if_news_not_found(news_id)
+
+        news = News.query.get(news_id)
+        db.session.delete(news)
+        db.session.commit()
+
+        return jsonify({'success': 'OK'})
+
+
+class NewsListApi(Resource):
+    def get(self):
+        news_list = News.query.all()
+
+        res = []
+        for news in news_list:
+            res.append({
+                    'title': news.title,
+                    'date': news.date,
+                    'user_id': news.user_id
+                })
+
+        return jsonify({'news': res})
+
+
+class UserApi(Resource):
+    def get(self, user_id):
+        abort_if_user_not_found(user_id)
+
+        user = User.query.get(user_id)
+        res = {
+            'username': user.username
+        }
+
+        return jsonify({'user': res})
+
+
+class UserListApi(Resource):
+    def get(self):
+        user_list = User.query.all()
+
+        res = []
+        for user in user_list:
+            res.append({
+                    'username': user.username
+                })
+
+        return jsonify({'users': res})
+
+
+api.add_resource(NewsListApi, '/news')
+api.add_resource(NewsApi, '/news/<int:news_id>')
+api.add_resource(UserListApi, '/users')
+api.add_resource(UserApi, '/user/<int:user_id>')
 
 
 def validate_password(form, password):
