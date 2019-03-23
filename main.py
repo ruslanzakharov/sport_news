@@ -143,7 +143,6 @@ def validate_username(form, username):
 def validate_login(form, submit):
     """Проверяет, вошел ли пользователь в аккаунт"""
     if 'username' not in session:
-        print('Войдите в аккаунт')
         raise ValidationError('Войдите в аккаунт')
 
 
@@ -182,7 +181,6 @@ class EditNewsForm(FlaskForm):
 @app.route('/add_news', methods=['GET', 'POST'])
 def add_news():
     form = AddNewsForm()
-    help(form)
 
     if form.validate_on_submit():
         im = form.photo.data
@@ -190,7 +188,6 @@ def add_news():
         im.save(photo_path)
 
         date = str(datetime.now()).split('.')[0]
-        print(date)
 
         news = News(
             title=form.title.data,
@@ -233,7 +230,6 @@ def edit_news(news_id):
             im.save(photo_path)
 
             news.photo = os.path.join('img', im.filename)
-            print(news.photo, 'news.photo, edit_news()')
 
         title = form.title.data
         if title:
