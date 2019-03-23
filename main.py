@@ -119,10 +119,10 @@ class UserListApi(Resource):
         return jsonify({'users': res})
 
 
-api.add_resource(NewsListApi, '/news')
-api.add_resource(NewsApi, '/news/<int:news_id>')
-api.add_resource(UserListApi, '/users')
-api.add_resource(UserApi, '/user/<int:user_id>')
+api.add_resource(NewsListApi, '/news_api')
+api.add_resource(NewsApi, '/news_api/<int:news_id>')
+api.add_resource(UserListApi, '/users_api')
+api.add_resource(UserApi, '/user_api/<int:user_id>')
 
 
 def validate_password(form, password):
@@ -197,7 +197,7 @@ def add_news():
             category=form.category.data,
             content=form.content.data,
             user_id=session['user_id'],
-            photo=photo_path,
+            photo=os.path.join('img', im.filename),
             date=date,
         )
         db.session.add(news)
